@@ -5,9 +5,26 @@ from dateutil import relativedelta
 from flask import Flask, session, jsonify, request 
 import os
 import traceback
+import json
 
-STATE = 0 
+STATE = "WELCOME_ASK_NAME" 
 cust_name = ""
+is_nickname = ""
+cust_nickname = ""
+cust_birthday = ""
+is_time_for_more = ""
+cust_phone = ""
+cust_color = ""
+cust_type_of_salon = ""
+is_reservation_now = ""
+cust_date_obj = ""
+cust_service_id = ""
+cust_avail_msg = ""
+cust_avail_display_options = []
+cust_avail_option_list = []
+cust_responses = {}
+return_list_of_dicts = [] 
+
 cust_first_name = "" 
 cust_phone = ""
 service_int = 0
@@ -45,9 +62,12 @@ Firstly, I would  want to know a little bit about you.
 Please tell me your name. 
 
 """
+all_okay_message = """
+All Okay.
 
+"""
 
-welcome_message = """
+welcome_ask_name_message = """
 こんにちは。アプリ登録ありがとうございます。
 私の名前はミライです。
 私は、あなた専属の美容コンシェルジュです。
@@ -74,6 +94,190 @@ What is your name?
 
 """
 
+old_is_nickname_message = """
+とっても可愛いお名前ですね。
+ニックネームはありますか？
+
+1) はい
+2) いいえ
+
+Very lovely name, do you have a nickname? 
+
+1) Yes
+2) No
+
+"""
+
+is_nickname_message = """
+とっても可愛いお名前ですね。
+ニックネームはありますか？
+
+Very lovely name, do you have a nickname? 
+
+"""
+
+new_is_nickname_options = """
+1) はい / Yes
+2) いいえ / No
+"""
+
+wrong_is_nickname_message = """
+Please type a valid response which I can understand.
+Press 1 for Yes or 2 for No.
+
+"""
+
+wrong_is_reservation_now_message = """
+Please type a valid response which I can understand.
+Press 1 for Yes or 2 for No.
+
+"""
+
+wrong_is_time_for_more_message = """
+Please type a valid response which I can understand.
+Press 1 for Yes or 2 for No.
+
+"""
+
+wrong_cust_type_of_salon_message = """
+Please type a valid response which I can understand.
+
+"""
+wrong_cust_service_message = """
+Please type a valid response which I can understand.
+
+"""
+
+
+ask_nickname_message = """
+ニックネームは何ですか？
+
+What is your nickname?
+
+"""
+
+ask_birthday_message = """
+いいですね。ありがとうございました（　　　　ちゃん/さん）。
+今後も仲良くしてください。
+
+お誕生日を教えていただけますか（….ちゃん/さん）？
+
+Great, thank you (nickname chan/san), we are going to be best friends.
+
+
+May I know your birthday (nickname chan/san)?
+
+"""
+
+old_is_time_for_more_message = """
+そうなんですね。
+もう少し質問に答えていただける時間はありますか？
+
+1) はい、今から大丈夫です。
+2) 今は難しいです。
+
+oh, cool,
+do you have time for more questions or we can talk later?
+
+1) I can chat now  
+2) let’s talk later 
+
+"""
+
+is_time_for_more_message = """
+そうなんですね。
+もう少し質問に答えていただける時間はありますか？
+
+oh, cool,
+do you have time for more questions or we can talk later?
+
+"""
+
+ask_phone_message = """
+ありがとうございます。
+電話番号を教えてください。
+
+Oh, I’m so happy we can talk now 
+What is your phone number?
+
+"""
+
+ask_color_message = """
+ありがとうございます。
+（….ちゃん/さん）、何色がお好きですか？
+
+Thank you very much, 
+(nickname chan/san), what is your favorite color?
+
+"""
+
+old_ask_type_of_salon_message = """
+いい色ですよね。この色は・・・
+
+どんな美容サロンが好きですか？
+
+1) 早く仕上げてくれる。
+2) 安い。
+3) 静かなサロン。
+4) 接客がとてもいいサロン。
+5) 高級感のあるサロン。
+6) スタッフの質が高いサロン。
+7) 清潔感のあるサロン。
+8) 落ち着いたサロン。
+
+
+Oh nice color, this color represent ………
+
+What type of beauty salons do you like?
+
+1) Fast salon, 
+2) Cheap price, 
+3) Quite salon, 
+4) Salon where I can have a good conversation and get good treatment, 
+5) Expensive salon,
+6) High quality salon staff 
+7) Salon with cleanliness
+8) Calm Salon
+
+"""
+
+ask_type_of_salon_message = """
+いい色ですよね。この色は・・・
+
+どんな美容サロンが好きですか？
+
+Oh nice color, this color represent ………
+
+What type of beauty salons do you like?
+"""
+
+is_reservation_now_message = """
+わかりました。
+お客様の期待に答えられるように、努めてまいります。
+
+次回予約をお取りしましょうか？
+
+I understand, I will always try to find you best options and best services for you, 
+
+Would you like to make a reservation at your salon for next time? Or later?
+
+
+"""
+
+ask_date_message = """
+かしこまりました。
+ご予約のお日にちはいつがよろしいですか？
+
+Oh, great, when you like to visit?
+
+"""
+
+ask_service_message = """"
+メニューはお決まりですか？
+What you like to do?
+
+"""
+
 
 empty_name_message = """
 I am pretty sure you have a wonderful name.
@@ -81,6 +285,12 @@ I am pretty sure you have a wonderful name.
 Please tell me. I won't tell anyone.
 
 """
+
+empty_nickname_message = """
+Hmm.. I guess you forgot to type your nickname.
+
+"""
+
 
 good_name_message = """
 That's a nice name, {}. 
@@ -107,6 +317,11 @@ I need your phone number to serve you better.
 Don't worry I won't call you in odd hours. 
 
 """
+empty_color_message = """
+I guess you forgot to enter your favourite color.
+
+"""
+
 
 
 wrong_service_message = """
@@ -275,7 +490,6 @@ def find_employees_for_service(service_id):
 
     return service_dict[service_id]
 
-
 def check_availability(service_int, date_time_obj,employee_list,time_duration):
 
     result_list = list()
@@ -411,122 +625,221 @@ def check_availability(service_int, date_time_obj,employee_list,time_duration):
     return result_list
 
 
+def check_new_availability(date_time_obj,employee_list,time_duration):
 
-    
-
-"""
-def check_availability(service_int, date_time_obj):
-
+    result_dict = {}
     date_format = date_time_obj.strftime("%Y-%m-%d")
     time_format = date_time_obj.strftime("%H:%M:%S")
+    for employee in employee_list:
+
+        employee_schedule = []
+        for i in range(48):
+            employee_schedule.append(0)
+
+        sql = "select service_id, employee_ids, start_date, start_time, end_time from reservations where user_id = 102 and reservation_type='1' and start_date = %s and employee_ids = %s"
 
 
-    sql = "select service_id,employee_ids,start_date,start_time,end_time from reservations where user_id = 102 and reservation_type='1' and start_date = %s and start_time = %s and service_id = %s"
+        tuple = (date_format,employee)
+        mycursor.execute(sql,tuple)
 
-    date_tuple = (date_format,time_format,service_int)
+        appointments = mycursor.fetchall()
 
-    mycursor.execute(sql,date_tuple)
+        for appointment in appointments:
 
-    myresult_list = mycursor.fetchall()
+            #print("--- appointment ---")
+            service_id = appointment[0]
+            employee_id = appointment[1]
+            date = appointment[2]
+            start_time = appointment[3]
+            end_time = appointment[4]
+            start_hour = start_time.seconds//3600
+            start_minute = (start_time.seconds//60) % 60
 
-    myresult_first_tuple = myresult_list[0]
+            start_slot_number = start_hour * 2
+            if start_minute >= 30 and start_minute <= 59:
+                start_slot_number += 1
+            
+            end_hour = end_time.seconds//3600
+            end_minute = (end_time.seconds//60) % 60
 
-    service_id = myresult_first_tuple[0]
-    employee_id = myresult_first_tuple[1]
-    date = myresult_first_tuple[2]
-    start_time = myresult_first_tuple[3]
-    end_time = myresult_first_tuple[4]
+            end_slot_number = end_hour * 2
 
-    #print(myresult_list)
-    print(service_id)
-    print(employee_id)
-    print(date)
-    print(start_time)
-    print(end_time)
+            if end_minute == 0:
+                end_slot_number -= 1
+            if end_minute > 30 and end_minute <= 59:
+                end_slot_number += 1
 
-"""
+            for i in range(start_slot_number,end_slot_number+1):
+                employee_schedule[i] = 1
+
+        num_of_slots_needed = time_duration * 2
+        
+        
+        free_slots = []
+        slot_i = 20 # Starting at 10:00 AM
+
+        for i in range(3):
+            #print("Iteration " + str(i) + " Started")
+            zero_count = 0
+
+            if i != 0 :     ## Increase slot number 
+                slot_i += 1 ## from previous iteration
+
+            while slot_i <= 44: # Ending search at 10:00 PM
+                #print("Inside While Loop")
+                #print("slot = " + str(slot_i))
+
+                if employee_schedule[slot_i] == 1:
+                    zero_count = 0
+                else:
+                    zero_count += 1
+
+                if zero_count == num_of_slots_needed:
+                    break
+                slot_i += 1
+        
+            avail_end_slot = slot_i
+            avail_start_slot = avail_end_slot - num_of_slots_needed + 1
+
+            free_slots.append(avail_start_slot)
+        result_dict[employee] = free_slots 
+
+
+    return result_dict
+
+
+def convert_avail_dict_to_display_options(avail_dict,emp_name_dict):
+    avail_msg = "かしこまりました。次のお日にちで空きがあります。\n"
+    avail_msg = avail_msg + "Okay, we have availability at the following times:\n"
+    option_list = []
+    
+    display_options = []
+
+    emp_serial = 1
+    for emp_id in avail_dict:
+        list_of_avail_slots = avail_dict[emp_id]
+        for slot in list_of_avail_slots:
+            time_start = slot_list[slot] 
+        
+            emp_bytearray_list = emp_name_dict[emp_id]
+            emp_bytearray_firstelement = emp_bytearray_list[0]
+            emp_name = emp_bytearray_firstelement.decode() ; emp_name 
+
+            #avail_msg = avail_msg + "\n" + str(emp_serial) + ") " + emp_name + " is available at " + str(time_start)
+
+            option_str = str(emp_serial) + ") " + emp_name + " is available at " + str(time_start)
+            option_list.append(option_str) 
+            option = [emp_serial,emp_id,slot]
+            display_options.append(option)
+        
+            emp_serial += 1 
+    
+    #avail_msg = avail_msg + "\n" + str(emp_serial) + ") " + "None of the above times suit me.\n\n" 
+    
+    none_option_str = str(emp_serial) + ") " + "None of the above times suit me."
+    option_list.append(none_option_str)
+
+    none_option = [emp_serial,"none","none"]
+    display_options.append(none_option)
+
+    return avail_msg,display_options,option_list      
+
+ 
+    
+
+
+
+def type_of_salon_menu_int_to_name(argument):
+    switcher = {
+        1: "早く仕上げてくれる",
+        2: "安い",
+        3: "静かなサロン",
+        4: "接客がとてもいいサロン",
+        5: "高級感のあるサロン",
+        6: "スタッフの質が高いサロン",
+        7: "清潔感のあるサロン",
+        8: "落ち着いたサロン"
+
+    }
+
+    return switcher.get(argument, "nothing")
+
+def service_menu_int_to_id(argument):
+    switcher = {
+        1: 1,
+        2: 3,
+        3: 2
+    }
+
+    return switcher.get(argument, "nothing")
+
+
+
+
+
 
 
 def service_numbers_to_strings(argument):
     switcher = {
         1: "nails",
         2: "beauty_treatment",
-        3: "eye_lashes"
-        #4: "body",
-        #5: "hair_removal",
-        #6: "facial"
+        3: "eye_lashes",
+        4: "body",
+        5: "hair_removal",
+        6: "facial"
     }
     return switcher.get(argument, "nothing")
 
-"""
-def check_nail_availability(date):
-    
-    available = 0
-    
-    date_time_str = str(date)
-    date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%d')
-    date_format = date_time_obj.strftime("%Y-%m-%d")
-    
-    date_tuple = (date_format, )
-    sql = "SELECT score FROM nails WHERE date = %s"
-    mycursor.execute(sql,date_tuple)
-    myresult_list = mycursor.fetchall()
-    myresult_tuple = myresult_list[0]
-    myresult = myresult_tuple[0]
-    #print(date_format)
-    #print(myresult)
-    
-    if myresult < 50:
-        #print("available")
-        available = 1
-    
-    next = []
-
-    for x in range(1,7):
-        next.append(date_time_obj + datetime.timedelta(days=x))
-        
-        #print(next)
-        least = 100
-        least_day = date_format
-    
-    for i in range(0,6):
-        #print(next[i])
-        new_date_format = next[i].strftime("%Y-%m-%d")
-        #print(new_date_format)
-        
-        new_date_tuple = (new_date_format, )
-        sql = "SELECT score FROM nails WHERE date = %s"
-        mycursor.execute(sql,new_date_tuple)
-        new_myresult_list = mycursor.fetchall()
-        #print(new_myresult_list)
-        new_myresult_tuple = new_myresult_list[0]
-        #print(new_myresult_tuple)
-        new_myresult = new_myresult_tuple[0]
-        #print(new_date_format)
-        #print(new_myresult)
-        if new_myresult < least:
-            least = new_myresult
-            least_day = new_date_format
-
-    #print("Availability:" + str(available))
-    #print("Least Day:" + least_day)
-
-    return available,least_day
-
-#check_nail_availability('2019-05-15')
 
 
-def send_message(sm_policy,sm_state,sm_message):
-    tuple_ = (sm_state,sm_message)
-    value = sm_policy[(tuple_)]
-    new_state = value[0]
-    new_message = value[1]
-    response = input(new_message)
-    return new_state,response
-"""
 def welcome_the_user():
     return welcome_message
 
+def welcome_ask_name():
+    return welcome_ask_name_message
+
+def is_nickname():
+    is_nickname_options = ["1) はい / Yes", "2) いいえ / No"] 
+    return is_nickname_message,is_nickname_options
+
+def ask_nickname():
+    return ask_nickname_message 
+
+def ask_birthday():
+    return ask_birthday_message
+
+def is_time_for_more():
+    is_time_for_more_options = ["1) はい、今から大丈夫です。/ I can chat now", "2) 今は難しいです。/ let’s talk later"]
+    return is_time_for_more_message,is_time_for_more_options
+
+def ask_phone():
+    return ask_phone_message     
+
+def ask_color():
+    return ask_color_message
+
+def ask_type_of_salon():
+    ask_type_of_salon_options = ["1) 早く仕上げてくれる。/ Fast salon","2) 安い。/ Cheap price",
+    "3) 静かなサロン。/ Quite salon","4) 接客がとてもいいサロン。/ Salon where I can have a good conversation and get good treatment",
+    "5) 高級感のあるサロン。/ Expensive salon","6) スタッフの質が高いサロン。/ High quality salon staff","7) 清潔感のあるサロン。/ Salon with cleanliness",
+    "落ち着いたサロン。/ Calm salon"]
+    return ask_type_of_salon_message, ask_type_of_salon_options
+
+def is_reservation_now():
+    is_reservation_now_options = ["1) 予約を取る。/ Make a reservation","2) 後で予約を取る。/ Later"]
+
+    return is_reservation_now_message,is_reservation_now_options
+
+def ask_date():
+    return ask_date_message
+
+def ask_service():
+    ask_service_options = ["1) ネイル / Nail","2) アイラッシュ / Eyelash","3) エステ / Aesthetic"]
+    return ask_service_message, ask_service_options
+
+def show_avail_options():
+    return cust_avail_msg
+     
 def ask_name():
     return get_name_message
 
@@ -539,8 +852,163 @@ def check_name(name):
         name_status = 1
         return name_status, good_name_message 
 
-def ask_phone():
-    return get_phone_message
+
+def check_is_nickname(is_nickname_menu_int):
+    
+    is_nickname_status = 0
+
+    try:
+        is_nickname_menu_int = int(is_nickname_menu_int)
+    except:
+        is_nickname_status = 0
+        is_nickname_response = None
+        out_msg = wrong_is_nickname_message
+        return is_nickname_status, is_nickname_response, out_msg
+
+    
+    if is_nickname_menu_int != 1 and is_nickname_menu_int != 2:
+        is_nickname_status = 0
+        is_nickname_response = None
+        out_msg = wrong_is_nickname_message
+
+    if is_nickname_menu_int == 1:
+        is_nickname_status = 1
+        is_nickname_response = "yes"
+        out_msg = all_okay_message
+      
+    if is_nickname_menu_int == 2:
+        is_nickname_status = 1 
+        is_nickname_response = "no"
+        out_msg = all_okay_message
+    
+    return is_nickname_status, is_nickname_response, out_msg 
+
+
+
+def check_is_reservation_now(is_reservation_now_menu_int):
+    
+    is_reservation_now_status = 0
+
+    try:
+        is_reservation_now_menu_int = int(is_reservation_now_menu_int)
+    except:
+        is_reservation_now_status = 0
+        is_reservation_now_response = None
+        out_msg = wrong_is_reservation_now_message
+        return is_reservation_now_status, is_reservation_now_response, out_msg
+
+    
+    if is_reservation_now_menu_int != 1 and is_reservation_now_menu_int != 2:
+        is_reservation_now_status = 0
+        is_reservation_now_response = None
+        out_msg = wrong_is_reservation_now_message
+
+    if is_reservation_now_menu_int == 1:
+        is_reservation_now_status = 1
+        is_reservation_now_response = "yes"
+        out_msg = all_okay_message
+      
+    if is_reservation_now_menu_int == 2:
+        is_reservation_now_status = 1 
+        is_reservation_now_response = "no"
+        out_msg = all_okay_message
+    
+    return is_reservation_now_status, is_reservation_now_response, out_msg 
+
+       
+def check_nickname(nickname):
+    nickname_status = 0 
+    if not nickname:
+        nickname_status = 0 
+        return nickname_status, empty_nickname_message
+    else:
+        nickname_status = 1
+        return nickname_status, all_okay_message 
+
+
+def check_is_time_for_more(is_time_for_more_menu_int):
+    
+    is_time_for_more_status = 0
+
+    try:
+        is_time_for_more_menu_int = int(is_time_for_more_menu_int)
+    except:
+        is_time_for_more_status = 0
+        is_time_for_more_response = None
+        out_msg = wrong_is_time_for_more_message
+        return is_time_for_more_status, is_time_for_more_response, out_msg
+
+    
+    if is_time_for_more_menu_int != 1 and is_time_for_more_menu_int != 2:
+        is_time_for_more_status = 0
+        is_time_for_more_response = None
+        out_msg = wrong_is_time_for_more_message
+
+    if is_time_for_more_menu_int == 1:
+        is_time_for_more_status = 1
+        is_time_for_more_response = "yes"
+        out_msg = all_okay_message
+      
+    if is_time_for_more_menu_int == 2:
+        is_time_for_more_status = 1 
+        is_time_for_more_response = "no"
+        out_msg = all_okay_message
+    
+    return is_time_for_more_status, is_time_for_more_response, out_msg 
+
+
+def check_cust_type_of_salon(cust_type_of_salon_menu_int):
+    
+    cust_type_of_salon_status = 0
+
+    try:
+        cust_type_of_salon_menu_int = int(cust_type_of_salon_menu_int)
+    except:
+        cust_type_of_salon_status = 0
+        cust_type_of_salon_response = None
+        out_msg = wrong_cust_type_of_salon_message
+        return cust_type_of_salon_status, cust_type_of_salon_response, out_msg
+
+    salon_type_name = type_of_salon_menu_int_to_name(cust_type_of_salon_menu_int)
+
+    
+    if salon_type_name == "nothing":
+        cust_type_of_salon_status = 0
+        cust_type_of_salon_response = None
+        out_msg = wrong_cust_type_of_salon_message
+
+    else:
+        cust_type_of_salon_status = 1
+        cust_type_of_salon_response = salon_type_name 
+        out_msg = all_okay_message
+   
+    return cust_type_of_salon_status, cust_type_of_salon_response, out_msg 
+
+def check_service(cust_service_menu_int):
+    cust_service_status = 0
+    try:
+        cust_service_menu_int = int(cust_service_menu_int)
+    except:
+        cust_service_status = 0
+        cust_service_response = None
+        out_msg = wrong_cust_service_message
+        return cust_service_status, cust_service_response, out_msg
+
+    service_id = service_menu_int_to_id(cust_service_menu_int)
+
+    
+    if service_id == "nothing":
+        cust_service_status = 0
+        cust_service_response = None
+        out_msg = wrong_cust_service_message
+
+    else:
+        cust_service_status = 1
+        cust_service_response = service_id 
+        out_msg = all_okay_message
+   
+    return cust_service_status, cust_service_response, out_msg 
+
 
 def check_phone(phone):
     phone_status = 0 
@@ -549,9 +1017,19 @@ def check_phone(phone):
         return phone_status, empty_phone_message
     else:
         phone_status = 1
-        return phone_status, good_phone_message 
+        return phone_status, all_okay_message 
+
+def check_color(color):
+    color_status = 0 
+    if not color:
+        color_status = 0 
+        return color_status, empty_color_message
+    else:
+        color_status = 1
+        return color_status, all_okay_message 
 
 
+"""
 def check_service(service_inp):
     service_status = 0
     service_name = "nothing"
@@ -571,6 +1049,7 @@ def check_service(service_inp):
     else:
         service_status = 1
         return service_int, service_status, good_service_message
+"""
 
 def check_date(date_inp):
     date_status = 0
@@ -587,7 +1066,7 @@ def check_date(date_inp):
         return date_obj, date_status, wrong_date_message
     else:
         date_status = 1
-        return date_obj, date_status, good_date_message
+        return date_obj, date_status, all_okay_message
 
 
 
@@ -611,7 +1090,7 @@ def check_time(time_inp):
         return time_obj, time_status, good_time_message
 
 
-def ask_date():
+def old_ask_date():
     date_str = input(get_date_message)
     date_obj = None
 
@@ -660,7 +1139,7 @@ app.secret_key = os.urandom(24)
 @app.route('/')
 def index():
     session['user'] = 'Anthony'
-    return "Index"
+    return "Index\n"
 
 @app.route('/getsession')
 def getsession():
@@ -677,8 +1156,23 @@ def dropsession():
 def chat():
     global STATE
     global cust_name
+    global is_nickname
+    global cust_nickname
     global cust_first_name
+    global cust_birthday
+    global is_time_for_more
     global cust_phone
+    global cust_color
+    global cust_type_of_salon 
+    global is_reservation_now 
+    global cust_date_obj 
+    global cust_service_id
+    global cust_avail_msg
+    global cust_avail_display_options
+    global cust_avail_option_list
+    global cust_responses
+    global return_list_of_dicts
+
     global service_int
     global date_obj
     global time_obj
@@ -690,83 +1184,275 @@ def chat():
     inp_msg  = json_input['message']
     print(inp_msg)
 
-    if STATE == 0:
-        out_msg = welcome_the_user()
-        STATE += 1
-        return out_msg 
-    
-    if STATE == 1:
-        cust_name = inp_msg
+    if STATE == "WELCOME_ASK_NAME":
+        out_msg = welcome_ask_name()
+        STATE = "NAME_ASKED"
+        out_dict = {"type" : "input", "question": out_msg, "answer": 0} 
+        return_list_of_dicts.append(out_dict)
+        #out_json = json.dumps(out_dict,ensure_ascii= False)
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+       
+        
+    if STATE == "NAME_ASKED":
+        cust_name = inp_msg 
         name_st,out_msg = check_name(cust_name)
         if name_st == 1:
-            name_break = cust_name.split()
-            cust_first_name = name_break[0]
-            STATE += 1
-            return out_msg.format(cust_first_name)
+            cust_responses["name"] = cust_name
+            return_list_of_dicts[-1]["answer"] = cust_name
+            return_list_of_dicts[-1]["type"] = "text"
+            STATE = "IS_NICKNAME" 
         else:
             return out_msg
 
-    if STATE == 2:
+
+    if STATE == "IS_NICKNAME":
+        out_msg,option_list = is_nickname()
+        STATE = "IS_NICKNAME_ASKED" 
+        out_dict = {"type" : "option", "question": out_msg, "option_list": option_list, "answer": 0} 
+        return_list_of_dicts.append(out_dict)
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+       
+
+    if STATE == "IS_NICKNAME_ASKED":
+        is_nickname_menu_int = inp_msg
+
+        is_nickname_status,is_nickname_response,out_msg = check_is_nickname(is_nickname_menu_int)
+                       
+        if is_nickname_status == 1:
+            cust_responses["is_nickname"] = is_nickname_response
+            return_list_of_dicts[-1]["answer"] = is_nickname_response
+            return_list_of_dicts[-1]["type"] = "text"
+            if is_nickname_response == "yes":
+                STATE = "ASK_NICKNAME"
+            elif is_nickname_response == "no":
+                STATE = "ASK_BIRTHDAY"
+        else:
+            return out_msg
+
+
+    if STATE == "ASK_NICKNAME":
+        out_msg = ask_nickname()
+        STATE = "NICKNAME_ASKED"
+        out_dict = {"type" : "input", "question": out_msg, "answer": 0} 
+        return_list_of_dicts.append(out_dict)
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+
+    if STATE == "NICKNAME_ASKED":
+        cust_nickname = inp_msg 
+        nickname_status,out_msg = check_name(cust_nickname)
+        if nickname_status == 1:
+            cust_responses["nickname"] = cust_nickname
+            return_list_of_dicts[-1]["answer"] = cust_nickname
+            return_list_of_dicts[-1]["type"] = "text" 
+            STATE = "ASK_BIRTHDAY" 
+        else:
+            return out_msg
+
+
+
+    if STATE == "ASK_BIRTHDAY":
+        out_msg = ask_birthday()
+        STATE = "BIRTHDAY_ASKED"
+        out_dict = {"type" : "input", "question": out_msg, "answer": 0} 
+        return_list_of_dicts.append(out_dict)
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+
+    if STATE == "BIRTHDAY_ASKED":
+        cust_birthday = inp_msg
+        birthday_obj,birthday_status,out_msg = check_date(cust_birthday)
+        birthday_str = str(birthday_obj)
+        if birthday_status == 1:
+            cust_responses["birthday"] = birthday_str
+            return_list_of_dicts[-1]["answer"] = birthday_str
+            return_list_of_dicts[-1]["type"] = "text"
+            STATE = "IS_TIME_FOR_MORE"
+        else:
+            return out_msg
+
+
+        
+    if STATE == "IS_TIME_FOR_MORE":
+        out_msg,option_list = is_time_for_more()
+        STATE = "IS_TIME_FOR_MORE_ASKED"
+        out_dict = {"type" : "option", "question": out_msg, "option_list": option_list, "answer": 0} 
+        return_list_of_dicts.append(out_dict)
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+
+
+    if STATE == "IS_TIME_FOR_MORE_ASKED":
+        is_time_for_more_menu_int = inp_msg
+
+        is_time_for_more_status,is_time_for_more_response,out_msg = check_is_time_for_more(is_time_for_more_menu_int)
+                       
+        if is_time_for_more_status == 1:
+            cust_responses["is_time_for_more"] = is_time_for_more_response
+            return_list_of_dicts[-1]["answer"] = is_time_for_more_response
+            return_list_of_dicts[-1]["type"] = "text"
+            if is_time_for_more_response == "yes":
+                STATE = "ASK_PHONE"
+            elif is_time_for_more_response == "no":
+                STATE = "IS_RESERVATION_NOW"
+        else:
+            return out_msg
+
+
+    if STATE == "ASK_PHONE":
+        out_msg = ask_phone()
+        STATE = "PHONE_ASKED"
+        out_dict = {"type" : "input", "question": out_msg, "answer": 0}
+        return_list_of_dicts.append(out_dict) 
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+
+    if STATE == "PHONE_ASKED":
         cust_phone = inp_msg
-        phone_st,out_msg = check_phone(cust_phone)
-        if phone_st == 1:
-            STATE += 1
-            return out_msg
+        phone_status,out_msg = check_phone(cust_phone)
+        if phone_status == 1:
+            cust_responses["phone"] = cust_phone
+            return_list_of_dicts[-1]["answer"] = cust_phone
+            return_list_of_dicts[-1]["type"] = "text"
+            STATE = "ASK_COLOR"
         else:
             return out_msg
 
-    if STATE == 3:
-        service_int,service_st,out_msg = check_service(inp_msg)
-        if service_st == 1:
-            STATE += 1
-            return out_msg
+
+
+
+    if STATE == "ASK_COLOR":
+        out_msg = ask_color()
+        STATE = "COLOR_ASKED"
+        out_dict = {"type" : "input", "question": out_msg, "answer": 0}
+        return_list_of_dicts.append(out_dict) 
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+
+    if STATE == "COLOR_ASKED":
+        cust_color = inp_msg
+
+        color_status,out_msg = check_color(cust_color)
+        if color_status == 1:
+            cust_responses["color"] = cust_color
+            return_list_of_dicts[-1]["answer"] = cust_color
+            return_list_of_dicts[-1]["type"] = "text"
+            STATE = "ASK_TYPE_OF_SALON"
         else:
             return out_msg
 
-    if STATE == 4:
-        date_obj,date_st,out_msg = check_date(inp_msg)
-        if date_st == 1:
-            STATE += 1
-            return out_msg
+
+    if STATE == "ASK_TYPE_OF_SALON": 
+        out_msg,option_list = ask_type_of_salon()
+        STATE = "TYPE_OF_SALON_ASKED"
+        out_dict = {"type" : "option", "question": out_msg, "option_list": option_list, "answer": 0}
+        return_list_of_dicts.append(out_dict) 
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+
+    if STATE == "TYPE_OF_SALON_ASKED":
+        cust_type_of_salon_menu_int = inp_msg
+
+        STATE = "IS_RESERVATION_NOW"
+
+        cust_type_of_salon_status,cust_type_of_salon,out_msg = check_cust_type_of_salon(cust_type_of_salon_menu_int)
+                       
+        if cust_type_of_salon_status == 1:
+            cust_responses["type_of_salon"] = cust_type_of_salon    
+            return_list_of_dicts[-1]["answer"] = cust_type_of_salon
+            return_list_of_dicts[-1]["type"] = "text" 
+
+            STATE = "IS_RESERVATION_NOW"
         else:
-            return out_msg    
+            return out_msg
 
 
-    if STATE == 5:
-        time_obj,time_st,out_msg = check_time(inp_msg)
-        if time_st == 1:
-            date_time_obj = calc_date_time(date_obj,time_obj)
-            relevant_employee_list = find_employees_for_service(service_int)
-            avail_emp_list = check_availability(service_int, date_time_obj,relevant_employee_list,duration)
+
+    if STATE == "IS_RESERVATION_NOW":
+        out_msg,option_list = is_reservation_now()
+        STATE = "IS_RESERVATION_NOW_ASKED"
+        out_dict = {"type" : "option", "question": out_msg, "option_list": option_list, "answer": 0}
+        return_list_of_dicts.append(out_dict) 
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+
+
+    if STATE == "IS_RESERVATION_NOW_ASKED":
+        is_reservation_now_menu_int = inp_msg
+
+        is_reservation_now_status,is_reservation_now_response,out_msg = check_is_reservation_now(is_reservation_now_menu_int)
+                       
+        if is_reservation_now_status == 1:
+            cust_responses["is_reservation_now"] = is_reservation_now_response
+            return_list_of_dicts[-1]["answer"] = is_reservation_now_response 
+            return_list_of_dicts[-1]["type"] = "text" 
+            if is_reservation_now_response == "yes":
+                STATE = "ASK_DATE"
+            elif is_reservation_now_response == "no":
+                STATE = "GOOD_BYE"
+        else:
+            return out_msg
+
+
+    if STATE == "ASK_DATE":
+        out_msg = ask_date()
+        STATE = "DATE_ASKED"
+        out_dict = {"type" : "input", "question": out_msg, "answer": 0}
+        return_list_of_dicts.append(out_dict) 
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+
+    if STATE == "DATE_ASKED":
+        cust_date = inp_msg
+        cust_date_obj,cust_date_status,out_msg = check_date(cust_date)
+        cust_date_str = str(cust_date_obj)
+        if cust_date_status == 1:
+            cust_responses["date"] = cust_date_str
+            return_list_of_dicts[-1]["answer"] = cust_date_str
+            return_list_of_dicts[-1]["type"] = "text"
+            STATE = "ASK_SERVICE"
+        else:
+            return out_msg
+
+
+    if STATE == "ASK_SERVICE":
+        out_msg,option_list = ask_service()
+        STATE = "SERVICE_ASKED"
+        out_dict = {"type" : "option", "question": out_msg, "option_list": option_list,"answer": 0} 
+        return_list_of_dicts.append(out_dict)
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+
+    if STATE == "SERVICE_ASKED":
+
+        cust_service_menu_int = inp_msg
+        cust_service_status, cust_service_id, out_msg = check_service(cust_service_menu_int)
+       
+        if cust_service_status == 1:
+            cust_responses["service"] = cust_service_id 
+            return_list_of_dicts[-1]["answer"] = cust_service_id
+            return_list_of_dicts[-1]["type"] = "text"
+            relevant_employee_list = find_employees_for_service(cust_service_id)
+            avail_emp_dict = check_new_availability(cust_date_obj,relevant_employee_list,duration)
             emp_name_dict = find_employee_name()
-            avail_msg = ""
-            
-
-            emp_serial = 1
-            for employee in avail_emp_list:
-                emp_id = employee[0]
-                start_slot = employee[1]
-                next_slot = employee[2]
-                time_start = slot_list[start_slot]
-                time_end = slot_list[next_slot]
-
-                emp_bytearray_list = emp_name_dict[emp_id]
-                emp_bytearray_firstelement = emp_bytearray_list[0]
-                emp_name = emp_bytearray_firstelement.decode() ; emp_name 
-
-                avail_msg = avail_msg + "\n" + str(emp_serial) + ") " + emp_name + " is available from " + str(time_start) + " to " + str(time_end)
-                
-                emp_serial_id_dict[emp_serial] = [emp_id,time_start,time_end]
-
-                emp_serial += 1 
-
-            avail_msg = avail_msg + "\n\nPlease choose your staff.\n\n"
-              
-            STATE += 1
-
-            return avail_msg
+            cust_avail_msg, cust_avail_display_options ,cust_avail_option_list = convert_avail_dict_to_display_options(avail_emp_dict,emp_name_dict)
+            STATE = "SHOW_AVAIL_OPTIONS"
         else:
-            return out_msg
+            return out_msg 
+
+    if STATE == "SHOW_AVAIL_OPTIONS":
+        out_msg = show_avail_options()
+        STATE = "AVAIL_OPTIONS_SHOWN"
+        out_dict = {"type" : "option", "question": out_msg, "option_list": cust_avail_option_list,"answer": 0}
+        return_list_of_dicts.append(out_dict) 
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+
+    if STATE == "AVAIL_OPTIONS_SHOWN":
+        avail_options_menu_int = inp_msg
+
         
     if STATE == 6:
 
