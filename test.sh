@@ -102,6 +102,20 @@ curl -b cookies.txt -c cookies.txt -d '{"question": "service", "token": "1", "us
 
 printf "\n\n"
 
+
+
+echo "curl -b cookies.txt -c cookies.txt -d '{"question": "avail_option", "token": "1", "user": "102", "ip":"w.x.y.z", "message": "1"}' -H "Content-Type: application/json" -X POST  http://127.0.0.1:5000/chat"
+
+printf "\n\n"
+
+curl -b cookies.txt -c cookies.txt -d '{"question": "avail_option", "token": "1", "user": "102", "ip":"w.x.y.z", "message": "1"}' -H "Content-Type: application/json" -X POST  http://127.0.0.1:5000/chat
+
+printf "\n\n"
+
+
+
+
+
 curl -b cookies.txt -c cookies.txt http://127.0.0.1:5000/dropsession
 
 printf "\n\n"

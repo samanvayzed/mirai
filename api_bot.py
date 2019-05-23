@@ -121,6 +121,13 @@ new_is_nickname_options = """
 2) いいえ / No
 """
 
+is_confirm_message = """
+確認しますか？
+
+Would You like to confirm?
+
+"""
+
 wrong_is_nickname_message = """
 Please type a valid response which I can understand.
 Press 1 for Yes or 2 for No.
@@ -147,6 +154,11 @@ wrong_cust_service_message = """
 Please type a valid response which I can understand.
 
 """
+wrong_cust_avail_options_message = """
+Please type a valid response which I can understand.
+
+"""
+
 
 
 ask_nickname_message = """
@@ -839,6 +851,12 @@ def ask_service():
 
 def show_avail_options():
     return cust_avail_msg
+
+def is_confirm():
+    is_confirm_options = ["1) はい / Yes", "2) いいえ / No"]
+    return is_confirm_message,is_confirm_options
+
+
      
 def ask_name():
     return get_name_message
@@ -1008,6 +1026,41 @@ def check_service(cust_service_menu_int):
         out_msg = all_okay_message
    
     return cust_service_status, cust_service_response, out_msg 
+
+
+def check_avail_options(cust_avail_options_menu_int, avail_display_options):
+    cust_avail_options_status = 0
+    try: 
+        cust_avail_options_menu_int = int(cust_avail_options_menu_int)
+    except:
+        cust_avail_options_status = 0
+        cust_avail_options_response = None 
+        out_msg = wrong_cust_avail_options_message
+        return cust_avail_options_status, cust_avail_options_response, out_msg
+
+    #avail_options_id = avail_options_menu_int_to_id(cust_avail_options_menu_int)
+    found = 0
+    selected_option = [0,0,0]
+    print("HELLO")
+    for option in avail_display_options:
+        print(option)
+        print(option[0])
+        if cust_avail_options_menu_int == option[0]:
+            found = 1
+            selected_option = option
+     
+    if found == 0:
+        cust_avail_options_status = 0
+        cust_avail_options_response = None 
+        out_msg = wrong_cust_avail_options_message
+
+    elif found == 1:
+        cust_avail_options_status = 1
+        cust_avail_options_response = selected_option 
+        out_msg = all_okay_message
+   
+    return cust_avail_options_status, selected_option, out_msg 
+
 
 
 def check_phone(phone):
@@ -1438,6 +1491,10 @@ def chat():
             avail_emp_dict = check_new_availability(cust_date_obj,relevant_employee_list,duration)
             emp_name_dict = find_employee_name()
             cust_avail_msg, cust_avail_display_options ,cust_avail_option_list = convert_avail_dict_to_display_options(avail_emp_dict,emp_name_dict)
+            
+            # Cust Avail Display Options is in "short" format
+            # Cust Avail Option List is in "full" format
+
             STATE = "SHOW_AVAIL_OPTIONS"
         else:
             return out_msg 
@@ -1451,9 +1508,28 @@ def chat():
         return out_json
 
     if STATE == "AVAIL_OPTIONS_SHOWN":
-        avail_options_menu_int = inp_msg
-
+        cust_avail_options_menu_int = inp_msg
+        cust_avail_options_status, cust_selected_option, out_msg = check_avail_options(cust_avail_options_menu_int,cust_avail_display_options)
         
+        if cust_avail_options_status == 1:
+            cust_responses["avail_options"] = cust_selected_option 
+            return_list_of_dicts[-1]["answer"] = cust_selected_option 
+            return_list_of_dicts[-1]["type"] = "text"
+
+            STATE = "IS_CONFIRM"
+        else:
+            return out_msg 
+
+    if STATE == "IS_CONFIRM":
+        out_msg, option_list = is_confirm()
+        STATE = "IS_CONFIRM_ASKED"
+        out_dict = {"type" : "option", "question": out_msg, "option_list": option_list,"answer": 0}
+        return_list_of_dicts.append(out_dict)
+        out_json = json.dumps(return_list_of_dicts,ensure_ascii= False)
+        return out_json
+
+
+
     if STATE == 6:
 
         print("EMP SER DICT")
